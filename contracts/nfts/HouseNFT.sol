@@ -1,16 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.25;
+pragma solidity 0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-/**
- *  @title Phaser
- *  @author Igor Lev
- *  @notice The PHSR token
- */
- 
+
 contract HouseNFT is ERC721Enumerable, Ownable {
     
     uint256 private nextTokenId;
@@ -32,11 +27,11 @@ contract HouseNFT is ERC721Enumerable, Ownable {
     mapping(address => bool) public exists;
 
     event Minted(address indexed to, uint256 indexed tokenId, uint256 indexed time);
-    event SetHouse(address indexed player, uint256 indexed lordNftId, uint256 indexed time);
+    event SetHouse(address indexed player, uint256 indexed houseId, uint256 indexed lordNftId, uint256 time);
     event SetVerifier(address indexed verifier, uint256 indexed time);
     event SetHeroNft(address indexed heroNftAddress, uint256 indexed time);
 
-    constructor(address initialOwner, address _heroNft, address _verifier) ERC721("Phaser House", "PHSR") Ownable(initialOwner) {
+    constructor(address initialOwner, address _heroNft, address _verifier) ERC721("Phaser House", "BLHS") Ownable(initialOwner) {
         require(_verifier != address(0), "verifier can't be zero address");
         require(_heroNft != address(0), "hero nft address not zero");
 
@@ -45,8 +40,8 @@ contract HouseNFT is ERC721Enumerable, Ownable {
         heroNft = _heroNft;
     }
 
-    function safeMint(address to, bytes calldata _data, uint8 _v, bytes32 _r, bytes32 _s) external returns(uint256) {
-        // require(!exists[to], "you already own the house nft");
+    function safeMint(address _to, bytes calldata _data, uint8 _v, bytes32 _r, bytes32 _s) external returns(uint256) {
+        require(!exists[_to], "you already own the house nft");
 
         uint256 tokenId = nextTokenId++;
 
@@ -57,16 +52,16 @@ contract HouseNFT is ERC721Enumerable, Ownable {
       
         {
             bytes memory prefix     = "\x19Ethereum Signed Message:\n32";
-            bytes32 message         = keccak256(abi.encodePacked(to, _data, address(this), msg.sender, nonce[msg.sender]));
+            bytes32 message         = keccak256(abi.encodePacked(nonce[_to], _to, _data, address(this)));
             bytes32 hash            = keccak256(abi.encodePacked(prefix, message));
             address recover         = ecrecover(hash, _v, _r, _s);
 
             require(recover == verifier, "Verification failed about mint house nft");
         }
         
-        _safeMint(to, tokenId);
+        _safeMint(_to, tokenId);
 
-        exists[to]                = true;
+        exists[_to]                = true;
         
         HouseParams storage house = houseParams[tokenId];
         house.flagShape           = flagShape;
@@ -76,9 +71,9 @@ contract HouseNFT is ERC721Enumerable, Ownable {
         house.lordNftId           = 0;
 
         soulbound[tokenId]        = true;
-        nonce[msg.sender]++;
+        nonce[_to]++;
 
-        emit Minted(to, tokenId, block.timestamp);
+        emit Minted(_to, tokenId, block.timestamp);
         return tokenId;
     }
 
@@ -108,7 +103,7 @@ contract HouseNFT is ERC721Enumerable, Ownable {
         house.lordNftId           = lordNftId;
         
         nonce[msg.sender]++;
-        emit SetHouse(msg.sender, lordNftId, block.timestamp);
+        emit SetHouse(msg.sender, _houseId, lordNftId, block.timestamp);
 
     }
 
