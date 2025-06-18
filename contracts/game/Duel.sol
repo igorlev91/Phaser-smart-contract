@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 
- 
 contract Duel is IERC721Receiver, Pausable, Ownable {
 
     address public heroNft;
@@ -76,11 +75,6 @@ contract Duel is IERC721Receiver, Pausable, Ownable {
     function setVerifier (address _verifier) external onlyOwner {
         require(_verifier != address(0), "verifier can't be zero address ");
         verifier = _verifier;
-    }
-
-    function setHeroNFT(address _nftAddress) external onlyOwner{
-        require(_nftAddress != address(0), "nft address can't be zero address ");
-        heroNft = _nftAddress;
     }
 
     function pause() public onlyOwner {
