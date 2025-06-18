@@ -9,9 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 
-/**
- *  @notice The Phaser Nft Marketplace is a trading platform on seascape network allowing to buy and sell Nfts
- */
+
 
 contract Marketplace is IERC721Receiver, Ownable {
     using SafeERC20 for IERC20;
