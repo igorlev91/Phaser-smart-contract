@@ -9,7 +9,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 
-
+/**
+ *  @title Phaser Marketplace
+ *  @author Phaser TEAM
+ *  @notice The Phaser Nft Marketplace is a trading platform on seascape network allowing to buy and sell Nfts
+ */
 
 contract Marketplace is IERC721Receiver, Ownable {
     using SafeERC20 for IERC20;
@@ -49,6 +53,8 @@ contract Marketplace is IERC721Receiver, Ownable {
     /// @param _feeReceiver fee receiving address
     /// @param _feeRate fee amount
     constructor(address initialOwner, address payable _feeReceiver, uint256 _feeRate) Ownable(initialOwner) {
+        require(_feeReceiver != address(0), "receiver address should not be equal to 0");
+        require(_feeRate <= 100, "fee rate can not exceed 10%");
         feeReceiver = _feeReceiver;
         feeRate = _feeRate;
         // initReentrancyStatus();
@@ -183,6 +189,8 @@ contract Marketplace is IERC721Receiver, Ownable {
     /// @param _nftAddress nft token address
     /// @param _currency currency token address
     function buy(uint _tokenId, address _nftAddress, address _currency, uint _price) public payable {
+        require(tx.origin == msg.sender, "origin is not sender");
+
         SalesObject storage obj = salesObjects[_nftAddress][_tokenId];
         require(obj.status == 0, "status: sold or canceled");
         require(obj.startTime <= block.timestamp, "not yet for sale");
