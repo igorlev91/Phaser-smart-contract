@@ -9,11 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 
-/**
- *  @title Phaser Marketplace
- *  @author Phaser TEAM
- *  @notice The Phaser Nft Marketplace is a trading platform on seascape network allowing to buy and sell Nfts
- */
+
 
 contract Marketplace is IERC721Receiver, Ownable {
     using SafeERC20 for IERC20;
@@ -48,13 +44,20 @@ contract Marketplace is IERC721Receiver, Ownable {
     event Sell( uint256 indexed saleId, uint256 tokenId, address nft, address currency, address seller, address buyer, uint256 startTime, uint256 price);
     event CancelSell(uint256 indexed saleId, uint256 tokenId);
     event NftReceived(address operator, address from, uint256 tokenId, bytes data);
+    event EnableSales(bool indexed enableSales, uint256 indexed time);
+    event AddSupportedNft(address indexed nftAddress, uint256 indexed time);
+    event RemoveSupportedNft(address indexed nftAddress, uint256 indexed time);
+    event AddSupportedCurrency(address indexed currencyAddress, uint256 indexed time);
+    event RemoveSupportedCurrency(address indexed currencyAddress, uint256 indexed time);
+    event SetFeeReceiver(address indexed feeReceiver, uint256 indexed time);
+    event SetFeeRate(uint256 indexed rate, uint256 indexed time);
 
     /// @dev set fee reciever address and fee rate
     /// @param _feeReceiver fee receiving address
     /// @param _feeRate fee amount
     constructor(address initialOwner, address payable _feeReceiver, uint256 _feeRate) Ownable(initialOwner) {
         require(_feeReceiver != address(0), "receiver address should not be equal to 0");
-        require(_feeRate <= 100, "fee rate can not exceed 10%");
+        require(_feeRate <= 100, "Rate should be bellow 100 (10%)");
         feeReceiver = _feeReceiver;
         feeRate = _feeRate;
         // initReentrancyStatus();
@@ -67,7 +70,9 @@ contract Marketplace is IERC721Receiver, Ownable {
     /// @notice enable/disable sales
     /// @param _salesEnabled set sales to true/false
     function enableSales(bool _salesEnabled) external onlyOwner {
-        salesEnabled = _salesEnabled; 
+        salesEnabled = _salesEnabled;
+
+        emit EnableSales(salesEnabled, block.timestamp);
     }
 
     /// @notice add supported nft token
@@ -75,6 +80,8 @@ contract Marketplace is IERC721Receiver, Ownable {
     function addSupportedNft(address _nftAddress) external onlyOwner {
         require(_nftAddress != address(0x0), "invalid address");
         supportedNft[_nftAddress] = true;
+
+        emit AddSupportedNft(_nftAddress, block.timestamp);
     }
 
     /// @notice disable supported nft token
@@ -82,6 +89,8 @@ contract Marketplace is IERC721Receiver, Ownable {
     function removeSupportedNft(address _nftAddress) external onlyOwner {
         require(_nftAddress != address(0x0), "invalid address");
         supportedNft[_nftAddress] = false;
+
+        emit RemoveSupportedNft(_nftAddress, block.timestamp);
     }
 
     /// @notice add supported currency token
@@ -89,6 +98,8 @@ contract Marketplace is IERC721Receiver, Ownable {
     function addSupportedCurrency(address _currencyAddress) external onlyOwner {
         require(!supportedCurrency[_currencyAddress], "currency already supported");
         supportedCurrency[_currencyAddress] = true;
+
+        emit AddSupportedCurrency(_currencyAddress, block.timestamp);
     }
 
     /// @notice disable supported currency token
@@ -96,6 +107,8 @@ contract Marketplace is IERC721Receiver, Ownable {
     function removeSupportedCurrency(address _currencyAddress) external onlyOwner {
         require(supportedCurrency[_currencyAddress], "currency already removed");
         supportedCurrency[_currencyAddress] = false;
+
+        emit RemoveSupportedCurrency(_currencyAddress, block.timestamp);
     }
 
     /// @notice change fee receiver address
@@ -103,6 +116,8 @@ contract Marketplace is IERC721Receiver, Ownable {
     function setFeeReceiver(address payable _walletAddress) external onlyOwner {
         require(_walletAddress != address(0x0), "invalid address");
         feeReceiver = _walletAddress;
+
+        emit SetFeeReceiver(_walletAddress, block.timestamp);
     }
 
     /// @notice change fee rate
@@ -110,6 +125,8 @@ contract Marketplace is IERC721Receiver, Ownable {
     function setFeeRate(uint256 _rate) external onlyOwner {
         require(_rate <= 100, "Rate should be bellow 100 (10%)");
         feeRate = _rate;
+
+        emit SetFeeRate(_rate, block.timestamp);
     }
 
     /// @notice returns sales amount
