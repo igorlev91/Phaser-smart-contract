@@ -25,7 +25,7 @@ contract OrbNFT is ERC721, ERC721Burnable, ERC721Enumerable, Ownable {
     event SetFactory(address indexed factory, uint256 indexed time);
     event SetVerifier(address indexed verifier, uint256 indexed time);
 
-    constructor(address initialOwner, address _verifier) ERC721("Blocklords Orbs", "ORB") Ownable(initialOwner) {
+    constructor(address initialOwner, address _verifier) ERC721("Phaser Orbs", "ORB") Ownable(initialOwner) {
         require(_verifier != address(0), "verifier can't be zero address");
 
         nextTokenId = 1;
