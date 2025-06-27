@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 
- 
 contract HouseNFT is ERC721Enumerable, Ownable {
     
     bool    private lock;
@@ -33,7 +32,7 @@ contract HouseNFT is ERC721Enumerable, Ownable {
     event SetVerifier(address indexed verifier, uint256 indexed time);
     event SetHeroNft(address indexed heroNftAddress, uint256 indexed time);
 
-    constructor(address initialOwner, address _heroNft, address _verifier) ERC721("Phaser House", "BLHS") Ownable(initialOwner) {
+    constructor(address initialOwner, address _heroNft, address _verifier) ERC721("Blocklords House", "BLHS") Ownable(initialOwner) {
         require(_verifier != address(0), "verifier can't be zero address");
         require(_heroNft != address(0), "hero nft address not zero");
 
