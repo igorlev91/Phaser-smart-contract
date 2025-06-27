@@ -6,11 +6,11 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 
- 
 contract BannerNFT is ERC721, ERC721Burnable, ERC721Enumerable, Ownable {
 
-    string private baseUri;
-    address public verifier;
+    bool    private lock;
+    string  private baseUri;
+    address public  verifier;
 
     mapping(address => uint256) public nonce;
 
@@ -23,20 +23,27 @@ contract BannerNFT is ERC721, ERC721Burnable, ERC721Enumerable, Ownable {
         verifier = _verifier;
     }
 
-    function safeMint(address _to, uint256 _tokenId, uint256 _deadline, uint8 _v, bytes32 _r, bytes32 _s) external returns(uint256) {
+    modifier nonReentrant() {
+        require(!lock, "no reentrant call");
+        lock = true;
+        _;
+        lock = false;
+    }
+
+    function safeMint(address _to, uint256 _tokenId, uint256 _deadline, uint8 _v, bytes32 _r, bytes32 _s) external nonReentrant returns(uint256) {
         require(_deadline >= block.timestamp, "signature has expired");
         
         {
             bytes memory prefix     = "\x19Ethereum Signed Message:\n32";
-            bytes32 message         = keccak256(abi.encodePacked(_to, _tokenId, address(this), nonce[_to], _deadline));
+            bytes32 message         = keccak256(abi.encodePacked(_to, _tokenId, address(this), nonce[_to], _deadline, block.chainid));
             bytes32 hash            = keccak256(abi.encodePacked(prefix, message));
             address recover         = ecrecover(hash, _v, _r, _s);
 
             require(recover == verifier, "Verification failed about mint banner nft");
         }
 
-        _safeMint(_to, _tokenId);
         nonce[_to]++;
+        _safeMint(_to, _tokenId);
         
         emit Minted(_to, _tokenId, block.timestamp);
         return _tokenId;

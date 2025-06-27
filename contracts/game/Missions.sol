@@ -6,11 +6,12 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
- 
+
 contract Missions is IERC721Receiver, Pausable, Ownable {
 
-    address public heroNft;
-    address public verifier;
+    bool    private lock;
+    address public  heroNft;
+    address public  verifier;
 
     mapping(address => mapping(uint256 => uint256[3])) public playerTeams;
     mapping(address => uint256) public nonce;
@@ -26,7 +27,14 @@ contract Missions is IERC721Receiver, Pausable, Ownable {
         verifier    = _verifier;
     }
 
-    function startMissions(address _from, bytes calldata _data, uint8 _v, bytes32 _r, bytes32 _s) external {
+    modifier nonReentrant() {
+        require(!lock, "no reentrant call");
+        lock = true;
+        _;
+        lock = false;
+    }
+
+    function startMissions(address _from, bytes calldata _data, uint8 _v, bytes32 _r, bytes32 _s) external nonReentrant{
         (uint256 teamId, uint256[3] memory nftIds, uint256 deadline) 
             = abi.decode(_data, (uint256, uint256[3], uint256));
 
@@ -53,20 +61,20 @@ contract Missions is IERC721Receiver, Pausable, Ownable {
         // verify the signature and ownership of NFTs
         verifySignature(_from, _data, _v, _r, _s);
 
+        nonce[_from]++;
+        // store the NFT IDs under the teamId
+        playerTeams[_from][teamId] = nftIds;
+
         for (uint256 i = 0; i < nftIds.length; i++) {
             if (nftIds[i] != 0) {
                 IERC721(heroNft).safeTransferFrom(_from, address(this), nftIds[i]);
             }
         }
 
-        // store the NFT IDs under the teamId
-        playerTeams[_from][teamId] = nftIds;
-        nonce[_from]++;
-
         emit StartMissions(_from, teamId, nftIds[0], nftIds[1], nftIds[2], block.timestamp);
     }
 
-    function finishMissions(address _from, bytes calldata _data, uint8 _v, bytes32 _r, bytes32 _s) external {
+    function finishMissions(address _from, bytes calldata _data, uint8 _v, bytes32 _r, bytes32 _s) external nonReentrant{
         (uint256 teamId, uint256 deadline) 
             = abi.decode(_data, (uint256, uint256));
 
@@ -90,6 +98,8 @@ contract Missions is IERC721Receiver, Pausable, Ownable {
         // verify the signature
         verifySignature(_from, _data, _v, _r, _s);
 
+        nonce[_from]++;
+
         for (uint256 i = 0; i < nftIds.length; i++) {
             if (playerTeams[_from][teamId][i] != 0) {
                 // transfer all NFTs in playerTeams[_from][teamId] back to the sender (_from)
@@ -99,7 +109,6 @@ contract Missions is IERC721Receiver, Pausable, Ownable {
 
         // remove the team information
         delete playerTeams[_from][teamId];
-        nonce[_from]++;
 
         emit FinishMissions(_from, teamId, nftIds[0], nftIds[1], nftIds[2], block.timestamp);
     }
@@ -107,7 +116,7 @@ contract Missions is IERC721Receiver, Pausable, Ownable {
     // Verify signature and hero ownership
     function verifySignature(address _addr, bytes calldata _data, uint8 _v, bytes32 _r, bytes32 _s) internal view {
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        bytes32 message = keccak256(abi.encodePacked(_addr, _data, address(this), nonce[_addr]));
+        bytes32 message = keccak256(abi.encodePacked(_addr, _data, address(this), nonce[_addr], block.chainid));
         bytes32 hash = keccak256(abi.encodePacked(prefix, message));
         address recover = ecrecover(hash, _v, _r, _s);
         require(recover == verifier, "Verification failed");
